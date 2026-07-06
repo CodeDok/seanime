@@ -4,7 +4,7 @@ go 1.26.2
 
 require (
 	fyne.io/systray v1.12.0
-	github.com/5rahim/go-astisub v0.2.1
+	github.com/asticode/go-astisub v0.41.0
 	github.com/5rahim/habari v0.1.12
 	github.com/5rahim/hls-m3u8 v0.1.0
 	github.com/Masterminds/semver/v3 v3.4.0
