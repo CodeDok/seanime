@@ -165,9 +165,10 @@ if (useLocal) {
         }
 
         console.log(`Extracting binaries to ${stagedRuntime}...`)
+        const tarPath = (p) => process.platform === "win32" ? p.replaceAll("\\", "/") : p
         const tarCommand = process.platform === "win32"
-            ? `tar --force-local -xzf "${tempArchive}" -C "${stagedRuntime}"`
-            : `tar -xzf "${tempArchive}" -C "${stagedRuntime}"`
+            ? `tar --force-local -xzf "${tarPath(tempArchive)}" -C "${tarPath(stagedRuntime)}"`
+            : `tar -xzf "${tarPath(tempArchive)}" -C "${tarPath(stagedRuntime)}"`
         execSync(tarCommand, { stdio: "inherit" })
         rmSync(tempArchive, { force: true })
 
