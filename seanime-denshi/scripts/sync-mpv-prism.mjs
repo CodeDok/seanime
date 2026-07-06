@@ -165,7 +165,10 @@ if (useLocal) {
         }
 
         console.log(`Extracting binaries to ${stagedRuntime}...`)
-        execSync(`tar -xzf "${tempArchive}" -C "${stagedRuntime}"`, { stdio: "inherit" })
+        const tarCommand = process.platform === "win32"
+            ? `tar --force-local -xzf "${tempArchive}" -C "${stagedRuntime}"`
+            : `tar -xzf "${tempArchive}" -C "${stagedRuntime}"`
+        execSync(tarCommand, { stdio: "inherit" })
         rmSync(tempArchive, { force: true })
 
         // Verify extracted files
