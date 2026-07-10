@@ -17,10 +17,14 @@ func (vc *VideoCore) FetchAndConvertSubsTo(url string, to int) (string, error) {
 	resp := client.Get(url).Do()
 
 	if resp.IsErrorState() {
-		return "", errors.New("failed to fetch subtitle file")
+		return "", fmt.Errorf("failed to fetch subtitle file (status %d)", resp.GetStatusCode())
 	}
 
 	payload := resp.String()
+
+	if strings.TrimSpace(payload) == "" {
+		return "", errors.New("fetched subtitle file is empty")
+	}
 
 	from := mkvparser.SubtitleTypeUnknown
 

@@ -3,6 +3,7 @@ import { MKVParser_SubtitleEvent, MKVParser_TrackInfo } from "@/api/generated/ty
 import { VideoCorePgsRenderer } from "@/app/(main)/_features/video-core/video-core-pgs-renderer"
 import { vc_getSubtitleStyle } from "@/app/(main)/_features/video-core/video-core-settings-menu"
 import { VideoCore_VideoPlaybackInfo, VideoCore_VideoSubtitleTrack, VideoCoreSettings } from "@/app/(main)/_features/video-core/video-core.atoms"
+import { vc_fetchSubtitleText } from "@/app/(main)/_features/video-core/video-core.utils"
 import { logger } from "@/lib/helpers/debug"
 import { detectTrackLanguage, isTrackLanguageMatch } from "@/lib/helpers/language"
 import { getAssetUrl } from "@/lib/server/assets"
@@ -1128,7 +1129,7 @@ Style: Default, Roboto Medium,24,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0
             try {
                 if (fileTrack.info.src) subtitleLog.info("Fetching subtitle content", fileTrack.info.src)
                 // fetch subtitle file content
-                const content = fileTrack.info.src ? await fetch(fileTrack.info.src).then(res => res.text()) : (fileTrack.info.content || "")
+                const content = fileTrack.info.src ? await vc_fetchSubtitleText(fileTrack.info.src) : (fileTrack.info.content || "")
                 this.fileTracks[trackNumber].content = content // cache it
                 this.libassRenderer?.renderer?.setTrack(content) // load it
                 await this._applySubtitleCustomization()
@@ -1142,7 +1143,14 @@ Style: Default, Roboto Medium,24,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,0,0
         } else {
             try {
                 subtitleLog.info("Converting subtitle to ASS format")
-                const assContent = await this.fetchAndConvertToASS(fileTrack.info.src, fileTrack.info.content)
+                // Fetch the content in the browser so the server converts it directly
+                // instead of re-fetching its own URL without the client's auth
+                let content = fileTrack.info.content
+                if (!content && fileTrack.info.src) {
+                    subtitleLog.info("Fetching subtitle content", fileTrack.info.src)
+                    content = await vc_fetchSubtitleText(fileTrack.info.src)
+                }
+                const assContent = await this.fetchAndConvertToASS(undefined, content)
 
                 if (!assContent) {
                     subtitleLog.error("Failed to convert subtitle to ASS format")

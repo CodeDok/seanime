@@ -1,6 +1,7 @@
 import { vc_getCaptionStyle } from "@/app/(main)/_features/video-core/video-core-settings-menu"
 import { getDefaultSubtitleTrackNumber } from "@/app/(main)/_features/video-core/video-core-subtitles"
 import { VideoCore_VideoSubtitleTrack, VideoCoreSettings } from "@/app/(main)/_features/video-core/video-core.atoms"
+import { vc_fetchSubtitleText } from "@/app/(main)/_features/video-core/video-core.utils"
 import { logger } from "@/lib/helpers/debug"
 import { detectTrackLanguage } from "@/lib/helpers/language"
 import { CaptionsRenderer, ParsedCaptionsResult, parseText, VTTCue, VTTRegion } from "media-captions"
@@ -283,7 +284,10 @@ export class MediaCaptionsManager extends EventTarget {
             loadFn: async () => {
                 // short circuit for vtt content
                 if (track.content && track.type === "vtt") return await parseText(track.content)
-                const vttContent = await this.fetchAndConvertToVTT(track.src, track.content)
+                // fetch the content in the browser so the server converts it directly
+                // instead of re-fetching its own URL without the client's auth
+                const content = track.content || (track.src ? await vc_fetchSubtitleText(track.src) : "")
+                const vttContent = await this.fetchAndConvertToVTT(undefined, content)
                 if (!vttContent) return null
                 track.content = vttContent
                 return await parseText(vttContent)
@@ -637,7 +641,10 @@ export class MediaCaptionsManager extends EventTarget {
                     loadFn: async () => {
                         // short circuit for vtt content
                         if (track.content && track.type === "vtt") return await parseText(track.content)
-                        const vttContent = await this.fetchAndConvertToVTT(track.src, track.content)
+                        // fetch the content in the browser so the server converts it directly
+                        // instead of re-fetching its own URL without the client's auth
+                        const content = track.content || (track.src ? await vc_fetchSubtitleText(track.src) : "")
+                        const vttContent = await this.fetchAndConvertToVTT(undefined, content)
                         if (!vttContent) return null
                         track.content = vttContent
                         return await parseText(vttContent)

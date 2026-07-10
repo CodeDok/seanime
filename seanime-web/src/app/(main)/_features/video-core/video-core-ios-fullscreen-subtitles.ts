@@ -4,6 +4,7 @@ import { vc_subtitleManager } from "@/app/(main)/_features/video-core/video-core
 import { vc_mediaCaptionsManager } from "@/app/(main)/_features/video-core/video-core"
 
 import { vc_isFullscreen } from "@/app/(main)/_features/video-core/video-core-atoms"
+import { vc_fetchSubtitleText } from "@/app/(main)/_features/video-core/video-core.utils"
 import { logger } from "@/lib/helpers/debug"
 import { isApple } from "@/lib/utils/browser-detection"
 import { useAtomValue } from "jotai"
@@ -112,9 +113,14 @@ export function useVideoCoreIOSFullscreenSubtitles({
 
                 // Parse the subtitle file
                 log.info("Parsing subtitle file:", subtitleSrc)
+                // fetch the content in the browser so the server converts it directly
+                // instead of re-fetching its own URL without the client's auth
+                if (!subtitleContent && subtitleSrc) {
+                    subtitleContent = await vc_fetchSubtitleText(subtitleSrc)
+                }
                 const convertedContent = subtitleType === "vtt" && !!subtitleContent
                     ? subtitleContent
-                    : await convertSubs({ url: subtitleSrc || "", content: subtitleContent || "", to: "vtt" })
+                    : await convertSubs({ url: "", content: subtitleContent || "", to: "vtt" })
                 if (!convertedContent) {
                     log.error("Failed to convert subtitle file")
                     return

@@ -287,6 +287,22 @@ export function isSubtitleFile(filename: string) {
     return subRx.test(filename)
 }
 
+// Fetches a subtitle file's text content in the browser.
+// The server's convert-subs endpoint should always be given the content directly:
+// passing it a URL makes the server re-fetch its own public address without the
+// client's auth, which can return an empty/HTML body behind a reverse proxy.
+export async function vc_fetchSubtitleText(src: string): Promise<string> {
+    const res = await fetch(src)
+    if (!res.ok) {
+        throw new Error(`Failed to fetch subtitle file (status ${res.status})`)
+    }
+    const text = await res.text()
+    if (!text.trim()) {
+        throw new Error("Subtitle file is empty")
+    }
+    return text
+}
+
 export function detectSubtitleType(content: string): "ass" | "vtt" | "ttml" | "stl" | "srt" | "unknown" {
     const trimmed = content.trim()
 
