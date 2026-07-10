@@ -1,7 +1,7 @@
 package mediastream
 
 import (
-	"errors"
+	"net/http"
 	"net/url"
 	"path/filepath"
 	"seanime/internal/events"
@@ -14,12 +14,12 @@ func (r *Repository) ServeEchoExtractedSubtitles(c echo.Context) error {
 
 	if !r.IsInitialized() {
 		r.wsEventManager.SendEvent(events.MediastreamShutdownStream, "Module not initialized")
-		return errors.New("module not initialized")
+		return echo.NewHTTPError(http.StatusServiceUnavailable, "module not initialized")
 	}
 
 	if !r.TranscoderIsInitialized() {
 		r.wsEventManager.SendEvent(events.MediastreamShutdownStream, "Transcoder not initialized")
-		return errors.New("transcoder not initialized")
+		return echo.NewHTTPError(http.StatusServiceUnavailable, "transcoder not initialized")
 	}
 
 	// Get the parameter group
@@ -28,13 +28,13 @@ func (r *Repository) ServeEchoExtractedSubtitles(c echo.Context) error {
 	// Get current media
 	mediaContainer, found := r.playbackManager.currentMediaContainer.Get()
 	if !found {
-		return errors.New("no file has been loaded")
+		return echo.NewHTTPError(http.StatusServiceUnavailable, "no file has been loaded")
 	}
 
 	retPath := videofile.GetFileSubsCacheDir(r.cacheDir, mediaContainer.Hash)
 
 	if retPath == "" {
-		return errors.New("could not find subtitles")
+		return echo.NewHTTPError(http.StatusNotFound, "could not find subtitles")
 	}
 
 	r.logger.Trace().Msgf("mediastream: Serving subtitles from %s", retPath)
@@ -45,12 +45,12 @@ func (r *Repository) ServeEchoExtractedSubtitles(c echo.Context) error {
 func (r *Repository) ServeEchoExtractedAttachments(c echo.Context) error {
 	if !r.IsInitialized() {
 		r.wsEventManager.SendEvent(events.MediastreamShutdownStream, "Module not initialized")
-		return errors.New("module not initialized")
+		return echo.NewHTTPError(http.StatusServiceUnavailable, "module not initialized")
 	}
 
 	if !r.TranscoderIsInitialized() {
 		r.wsEventManager.SendEvent(events.MediastreamShutdownStream, "Transcoder not initialized")
-		return errors.New("transcoder not initialized")
+		return echo.NewHTTPError(http.StatusServiceUnavailable, "transcoder not initialized")
 	}
 
 	// Get the parameter group
@@ -59,13 +59,13 @@ func (r *Repository) ServeEchoExtractedAttachments(c echo.Context) error {
 	// Get current media
 	mediaContainer, found := r.playbackManager.currentMediaContainer.Get()
 	if !found {
-		return errors.New("no file has been loaded")
+		return echo.NewHTTPError(http.StatusServiceUnavailable, "no file has been loaded")
 	}
 
 	retPath := videofile.GetFileAttCacheDir(r.cacheDir, mediaContainer.Hash)
 
 	if retPath == "" {
-		return errors.New("could not find subtitles")
+		return echo.NewHTTPError(http.StatusNotFound, "could not find attachments")
 	}
 
 	subFilePath, _ = url.PathUnescape(subFilePath)

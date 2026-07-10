@@ -75,6 +75,11 @@ read:
 		return "", fmt.Errorf("failed to read subtitles: %w", err)
 	}
 
+	// astisub readers return zero items without an error on empty/unrecognized input
+	if len(o.Items) == 0 {
+		return "", fmt.Errorf("subtitle file contains no cues (empty or unrecognized content)")
+	}
+
 	o.Metadata = &astisub.Metadata{
 		SSAScriptType:            "v4.00+",
 		SSAWrapStyle:             "0",
@@ -183,6 +188,11 @@ read:
 
 	if o == nil {
 		return "", fmt.Errorf("failed to read subtitles: %w", err)
+	}
+
+	// astisub readers return zero items without an error on empty/unrecognized input
+	if len(o.Items) == 0 {
+		return "", fmt.Errorf("subtitle file contains no cues (empty or unrecognized content)")
 	}
 
 	w := &bytes.Buffer{}

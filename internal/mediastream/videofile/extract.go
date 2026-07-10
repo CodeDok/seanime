@@ -37,8 +37,20 @@ func ExtractAttachment(ffmpegPath string, path string, hash string, mediaInfo *M
 	_ = os.MkdirAll(subsPath, 0755)
 
 	// Check if subtitles are already extracted.
-	subsDir, err := os.ReadDir(subsPath)
-	if err == nil && len(subsDir) >= len(mediaInfo.Subtitles) {
+	// Verify each expected file exists and is non-empty; a failed or interrupted
+	// previous run can leave empty files behind that would otherwise be served forever.
+	alreadyExtracted := len(mediaInfo.Subtitles) > 0
+	for _, sub := range mediaInfo.Subtitles {
+		if sub.Extension == nil || *sub.Extension == "" {
+			continue
+		}
+		fi, err := os.Stat(filepath.Join(subsPath, fmt.Sprintf("%d.%s", sub.Index, *sub.Extension)))
+		if err != nil || fi.Size() == 0 {
+			alreadyExtracted = false
+			break
+		}
+	}
+	if alreadyExtracted {
 		logger.Debug().Str("hash", hash).Msgf("videofile: Attachments already extracted")
 		return nil
 	}
@@ -99,6 +111,14 @@ func ExtractAttachment(ffmpegPath string, path string, hash string, mediaInfo *M
 			logger.Error().Err(err).Msgf("videofile: Error running FFmpeg")
 		}
 		crashlog.GlobalCrashLogger.WriteAreaLogToFile(crashLogger)
+		// Remove partial output so the next attempt re-extracts instead of
+		// treating empty/truncated subtitle files as extracted.
+		for _, sub := range mediaInfo.Subtitles {
+			if sub.Extension == nil || *sub.Extension == "" {
+				continue
+			}
+			_ = os.Remove(filepath.Join(subsPath, fmt.Sprintf("%d.%s", sub.Index, *sub.Extension)))
+		}
 	} else {
 		logger.Debug().Str("hash", hash).Int("subtitles", extractedCount).Msg("videofile: Attachment extraction complete")
 	}
